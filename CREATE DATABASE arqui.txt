@@ -1,18 +1,170 @@
 CREATE DATABASE arqui;
 use arqui;
 
-CREATE TABLE Usuarios (
-    id_usuario INT AUTO_INCREMENT PRIMARY KEY,
-    nombre VARCHAR(100),
-    apellido VARCHAR(100),
-    email VARCHAR(100) UNIQUE,
-    password VARCHAR(255),
-    rol ENUM('funcionario', 'contribuyente')
-);
-
 CREATE TABLE Roles (
     id_rol INT AUTO_INCREMENT PRIMARY KEY,
+    rol ENUM('funcionario', 'admin'),
+    descripcion TEXT
+);
+
+CREATE TABLE Permisos (
+    id_permiso INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(50),
     descripcion TEXT
 );
 
+CREATE TABLE Empleado (
+    id_empleado INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100),
+    apellido VARCHAR(100),
+    email VARCHAR(100) UNIQUE,
+    password VARCHAR(255),
+    id_rol INT,
+    FOREIGN KEY (id_rol) REFERENCES Roles(id_rol)
+);
+
+CREATE TABLE Cliente (
+    id_cliente INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100),
+    apellido VARCHAR(100),
+    email VARCHAR(100) UNIQUE,
+    password VARCHAR(255),
+	litros_canjeados INT UNSIGNED DEFAULT 0
+);
+
+CREATE TABLE RolPermiso (
+    id_rol INT,
+    id_permiso INT,
+    PRIMARY KEY (id_rol, id_permiso),
+    FOREIGN KEY (id_rol) REFERENCES Roles(id_rol),
+    FOREIGN KEY (id_permiso) REFERENCES Permisos(id_permiso)
+);
+
+CREATE TABLE Eventos (
+  id_evento INT AUTO_INCREMENT PRIMARY KEY,
+  id_estado INT,
+  latitud DOUBLE,
+  longitud DOUBLE,
+  fecha DATE,
+  hora TIME,
+  descripcion TEXT,
+  creado_por INT,
+  FOREIGN KEY (creado_por) REFERENCES Empleado(id_empleado)
+);
+
+CREATE TABLE Estado_Eventos (
+  id_estado INT AUTO_INCREMENT PRIMARY KEY,
+  id_evento INT UNIQUE,
+  estado ENUM('Iniciado', 'En curso', 'Cerrada') NOT NULL DEFAULT 'Iniciado',
+  FOREIGN KEY (id_evento) REFERENCES Eventos(id_evento) ON DELETE CASCADE
+);
+
+CREATE TABLE Participacion_Evento (
+    id_participacion INT AUTO_INCREMENT PRIMARY KEY,
+    id_cliente INT,
+    id_evento INT,
+    fecha_participacion DATE,
+    puntos_otorgados INT DEFAULT 0,
+    FOREIGN KEY (id_cliente) REFERENCES Cliente(id_cliente),
+    FOREIGN KEY (id_evento) REFERENCES Eventos(id_evento)
+);
+
+-- Tabla de Canje de Puntos
+CREATE TABLE Canje_Puntos (
+    id_canje INT AUTO_INCREMENT PRIMARY KEY,
+    id_cliente INT,
+    puntos_canjeados INT,
+    fecha_canje DATE,
+    litros_agua_donados DOUBLE,
+    FOREIGN KEY (id_cliente) REFERENCES Cliente(id_cliente)
+);
+
+-- Tabla de Zonas Beneficiadas
+CREATE TABLE Zonas_Beneficiadas (
+    id_zona INT AUTO_INCREMENT PRIMARY KEY,
+    nombre_zona VARCHAR(100),
+    descripcion TEXT,
+    ubicacion VARCHAR(255)
+);
+
+-- Tabla de Entregas de Agua
+CREATE TABLE Entrega_Agua (
+    id_entrega INT AUTO_INCREMENT PRIMARY KEY,
+    id_canje INT,
+    id_zona INT,
+    fecha_entrega DATE,
+    litros_entregados DOUBLE,
+    FOREIGN KEY (id_canje) REFERENCES Canje_Puntos(id_canje),
+    FOREIGN KEY (id_zona) REFERENCES Zonas_Beneficiadas(id_zona)
+);
+
+-- Tabla de Historial de Puntos
+CREATE TABLE Historial_Puntos (
+    id_historial INT AUTO_INCREMENT PRIMARY KEY,
+    id_cliente INT,
+    tipo ENUM('ganado', 'canjeado'),
+    puntos INT,
+    descripcion TEXT,
+    fecha DATE,
+    FOREIGN KEY (id_cliente) REFERENCES Cliente(id_cliente)
+);
+
+-- Tabla de Comentarios sobre Eventos
+CREATE TABLE Comentarios_Evento (
+    id_comentario INT AUTO_INCREMENT PRIMARY KEY,
+    id_evento INT,
+    id_cliente INT,
+    comentario TEXT,
+    fecha_comentario DATE,
+    FOREIGN KEY (id_evento) REFERENCES Eventos(id_evento),
+    FOREIGN KEY (id_cliente) REFERENCES Cliente(id_cliente)
+);
+
+-- Tabla de Contenidos Educativos
+CREATE TABLE Educacion_Ambiental (
+    id_contenido INT AUTO_INCREMENT PRIMARY KEY,
+    titulo VARCHAR(100),
+    descripcion TEXT,
+    url_video TEXT,
+    fecha_publicacion DATE
+);
+
+-- Relación Cliente - Contenido Educativo Visto
+CREATE TABLE Cliente_Contenido (
+    id_cliente INT,
+    id_contenido INT,
+    fecha_visto DATE,
+    PRIMARY KEY (id_cliente, id_contenido),
+    FOREIGN KEY (id_cliente) REFERENCES Cliente(id_cliente),
+    FOREIGN KEY (id_contenido) REFERENCES Educacion_Ambiental(id_contenido)
+);
+
+-- Tabla de Notificaciones
+CREATE TABLE Notificaciones (
+    id_notificacion INT AUTO_INCREMENT PRIMARY KEY,
+    id_cliente INT,
+    mensaje TEXT,
+    leido BOOLEAN DEFAULT FALSE,
+    fecha_envio DATETIME,
+    FOREIGN KEY (id_cliente) REFERENCES Cliente(id_cliente)
+);
+
+-- Tabla de Estadísticas del Cliente
+CREATE TABLE Estadisticas_Cliente (
+    id_cliente INT PRIMARY KEY,
+    total_eventos INT DEFAULT 0,
+    total_puntos INT DEFAULT 0,
+    total_litros_donados DOUBLE DEFAULT 0,
+    FOREIGN KEY (id_cliente) REFERENCES Cliente(id_cliente)
+);
+
+INSERT INTO Roles (rol, descripcion) VALUES
+('admin', 'Administrador del sistema'),
+('funcionario', 'Funcionario del sistema');
+
+select * from Participacion_Evento;
+select * from Empleado;
+select * from Cliente;
+select * from Eventos;
+select * from Estado_Eventos;
+select * from Canje_Puntos;
